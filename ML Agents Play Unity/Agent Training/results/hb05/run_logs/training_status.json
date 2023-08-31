@@ -1,0 +1,29 @@
+{
+    "RubyBasic": {
+        "checkpoints": [
+            {
+                "steps": 5932,
+                "file_path": "results\\hb05\\RubyBasic\\RubyBasic-5932.onnx",
+                "reward": -1.0,
+                "creation_time": 1693513311.5063858,
+                "auxillary_file_paths": [
+                    "results\\hb05\\RubyBasic\\RubyBasic-5932.pt"
+                ]
+            }
+        ],
+        "final_checkpoint": {
+            "steps": 5932,
+            "file_path": "results\\hb05\\RubyBasic.onnx",
+            "reward": -1.0,
+            "creation_time": 1693513311.5063858,
+            "auxillary_file_paths": [
+                "results\\hb05\\RubyBasic\\RubyBasic-5932.pt"
+            ]
+        }
+    },
+    "metadata": {
+        "stats_format_version": "0.3.0",
+        "mlagents_version": "0.29.0",
+        "torch_version": "1.12.1"
+    }
+}
