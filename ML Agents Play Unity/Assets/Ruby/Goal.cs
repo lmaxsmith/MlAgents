@@ -1,31 +1,31 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using Random = UnityEngine.Random;
 
-public class Sattelite : MonoBehaviour
+public class Goal : MonoBehaviour
 {
+    private Station _station;
+    
     // Start is called before the first frame update
-    void Start()
+    void Awake()
+    {
+        _station = FindObjectOfType<Station>();
+    }
+
+    private void Start()
     {
         
     }
 
-    // Update is called once per frame
-    void Update()
-    {
-        
-    }
-    
     public void Reset()
     {
         //set randome postion 2-6 units away from station
-        transform.position = FindObjectOfType<Station>().transform.position + new Vector3(
+        transform.position = _station.transform.position + new Vector3(
             Random.Range(2, 6),
             Random.Range(2, 6),
             Random.Range(2, 6)
         );
-        
-        //set random rotation
-        transform.rotation = Random.rotation;
     }
 }
