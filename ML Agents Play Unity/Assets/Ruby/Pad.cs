@@ -1,16 +1,9 @@
-using System;
-using System.Collections;
-using System.Collections.Generic;
-using Ruby;
-using UnityEngine;
+﻿using UnityEngine;
 
-public class Pad : MonoBehaviour
+namespace Ruby
 {
-    public RubyAgent agent;
-
-
-    private void OnCollisionEnter(Collision other)
-    {
-        agent.OnPadTouch(other);
-    }
+	public class Pad : TouchSensor
+	{
+		
+	}
 }

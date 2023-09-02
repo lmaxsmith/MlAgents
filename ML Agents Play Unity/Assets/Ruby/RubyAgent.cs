@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using Unity.MLAgents;
 using Unity.MLAgents.Actuators;
 using Unity.MLAgents.Sensors;
@@ -13,7 +14,9 @@ namespace Ruby
     public class RubyAgent : Agent
     {
 
-        #region Parameters
+
+        #region ==== Parameters ====------------------
+
 
         [Tooltip("Force to apply when moving")] [Range(.1f, 4)]
         public float _moveForceSet = 1f;
@@ -31,12 +34,16 @@ namespace Ruby
         [Tooltip("Maximum collision Velocity allowed.")]
         public float _maxCollisionVelocity = 2f;
         
+        [Tooltip("Defauly true. Improves training. Onle select false for debugging.")]
+        public bool _randomizeOnReset = true;
+        
         [Header("Model Stuff")] 
         [Tooltip("Animation and effect of thruster being on.")] [SerializeField]
         private GameObject _thruster; 
         [Tooltip("Animation and effect of reverse thruster being on.")] [SerializeField]
         private GameObject _reverseThruster;
 
+        [Header("Fuel")]
         public float _thrusterFuelSeconds = 20;
         public float _thrusterFuelSecondsReverse = 3;
         
@@ -45,26 +52,40 @@ namespace Ruby
         [Range(0,1)]
         public float _thrusterFuelReverse = 1;
         
+  
         
-        #endregion
+        #region == Autoreference ==----
+
         // The rigidbody of the agent
-         private Rigidbody _rigidbody;
+        private Rigidbody _rigidbody;
         private Camera _agentCamera;
     
-        private Sattelite _sattelite;
+        private Sattelite _satellite;
 
         private Station _station;
 
+        #endregion ----/Autoreference ==
+
+        #endregion -----------------/Parameters ====
 
 
-        #region Setup
 
+
+
+
+        #region ==== Monobehavior ====------------------
+
+
+        
         void Awake()
         {
             _rigidbody = GetComponent<Rigidbody>();
             _agentCamera = GetComponentInChildren<Camera>();
-            _sattelite = FindObjectOfType<Sattelite>();
+            _satellite = FindObjectOfType<Sattelite>();
             _station = FindObjectOfType<Station>();
+            
+            _startPosition = transform.position;
+            _startRotation = transform.rotation;
         }
     
         // Start is called before the first frame update
@@ -73,31 +94,27 @@ namespace Ruby
             Reset();
         }
 
-        public override void OnEpisodeBegin()
-        {
-            Reset();
-            
-            base.OnEpisodeBegin();
-        }
 
-        public bool _randomize;
-        
+
+
+        private Vector3 _startPosition;
+        private Quaternion _startRotation;
         private void Reset()
         {
 
-            if (_randomize)
+            if (_randomizeOnReset)
             {
                 transform.position = _station.transform.position + new Vector3(
-                    Random.Range(2, 4),
-                    Random.Range(2, 4),
-                    Random.Range(2, 4)
+                    Random.Range(-2, 4),
+                    Random.Range(2, 6),
+                    Random.Range(2, 6)
                 );
                 transform.rotation = Random.rotation;
             }
             else
             {
-                transform.position = Vector3.zero;
-                transform.rotation = Quaternion.identity;
+                transform.position = _startPosition;
+                transform.rotation = _startRotation;
             }
             
             _rigidbody.velocity = Vector3.zero;
@@ -109,7 +126,7 @@ namespace Ruby
             _thrusterFuel = 1;
             _thrusterFuelReverse = 1;
             
-            _sattelite.Reset();
+            _satellite.Reset();
         }
 
 
@@ -130,22 +147,31 @@ namespace Ruby
             CheckConditionals();
             //AutoStabalize();
         }
+        
+        
 
-        void AutoStabalize()
+        #endregion -----------------/Monobehavior ====
+
+        
+        
+        
+        #region ==== Agent Implementation ====------------------
+
+
+        public override void OnEpisodeBegin()
         {
-            //_rigidbody.AddRelativeTorque(_rigidbody.angularVelocity * -_rotationSpeed / 2);
+            Reset();
+            base.OnEpisodeBegin();
         }
+        
 
-        #endregion
-
-
-        #region Observations
-
+        #region == Observations ==----
+        
         public override void CollectObservations(VectorSensor sensor)
         {
             Transform tform = transform;
             Transform stationTform = _station.transform;
-            Transform satteliteTform = _sattelite.transform;
+            Transform satteliteTform = _satellite.transform;
             
             Vector3 position = tform.position;
             Vector3 stationPosition = stationTform.position;
@@ -227,58 +253,88 @@ namespace Ruby
             return hit.collider ? hit.distance : 10f;
         }
 
-        #endregion
         
 
-        #region Scoring
+        #endregion ----/Observations ==
+        
 
-        private void OnCollisionEnter(Collision col)
+
+        #region == Scoring and Rewards ==----
+
+
+        public void Goal(float velocity, bool isPad)
         {
-            float crashVelocity = col.relativeVelocity.magnitude;
-            if(crashVelocity > _maxCollisionVelocity)
-            {
-                Debug.Log($"Big Crash! {crashVelocity}");
-                Reward(RewardLevel.BigBad);
-            }
-            else
-            {
-                Debug.Log($"Small Crash! {crashVelocity}");
-                Reward(RewardLevel.SmallBad);
-            }
+            Debug.Log($"Gooooooal!! {velocity} m/s");
+            hitWasGood = true;
+            
+            if (isPad)
+                if( isPad && velocity < _maxCollisionVelocity)
+                    Reward(RewardLevel.BigGood);
+                else
+                    Reward(RewardLevel.SmallGood);
+            
+            EndEpisode();
         }
 
-        public void OnPadTouch(Collision col)
-        {
-            if (col.relativeVelocity.magnitude < _maxCollisionVelocity)
-            {
-                Debug.Log("Small Touch!");
-                Reward(RewardLevel.BigGood);
-                EndEpisode();
-            }
-            else
-            {
-                Debug.Log("Big Touch!");
-                Reward(RewardLevel.SmallGood);
-                EndEpisode();
-            }
-        }
+        private bool hitWasGood; //this solution sucks
 
+        // private async void OnCollisionEnter(Collision other)
+        // {
+        //     Debug.Log($"Oh shit did I just crash???");
+        //     await Task.Delay(1000);
+        //     if(hitWasGood)
+        //     {
+        //         hitWasGood = false;
+        //         Debug.Log($"NVM sall good.");
+        //         return;
+        //     }
+        //     
+        //     Debug.Log("Shit yeah I crashed. at  ");
+        //     KillRound();
+        // }
+
+
+        public float closestSoFar = float.MaxValue;
+        public float closenessIncrement = .1f;
 
         private void CheckConditionals()
         {
-            if (Vector3.Distance(transform.position, _station.transform.position) > _maxDistance * 2)
+            Vector3 position = transform.position;
+            Vector3 satellitePosition = _satellite.transform.position;
+            
+            // if (Vector3.Distance(position, _station.transform.position) > _maxDistance * 2)
+            //     KillRound();
+            if(Vector3.Distance(position, satellitePosition) > _maxDistance * 2)
                 KillRound();
-            if(Vector3.Distance(transform.position, _sattelite.transform.position) > _maxDistance * 2)
-                KillRound();
+
+            //reward for inching closer.
+            float currentDistance = Vector3.Distance(position, satellitePosition);
+            if (closestSoFar - currentDistance > closenessIncrement)
+            {
+                Reward(RewardLevel.SmallGood);
+                closestSoFar = currentDistance;
+            }
             
             if(_thrusterFuel < 0)
-                KillRound();
+                OutOfGas(0);
             if(_thrusterFuelReverse < 0)
-                KillRound();
+                OutOfGas(1);
         }
-        
 
-        private void Reward(RewardLevel level)
+        //Awkward method for tracking when we first run out of gas. 
+        //A more elegant solution for all this would be a gas tank class.
+        private void OutOfGas(int gasType)
+        {
+            if (hasGasList[gasType])
+            {
+                Reward(RewardLevel.SmallBad);
+                hasGasList[gasType] = false;
+            }
+        }
+
+        private List<bool> hasGasList = new List<bool>(){false, false};
+
+        private void Reward(RewardLevel level, float scalar = 1f)
         {
             switch (level)
             {
@@ -304,10 +360,26 @@ namespace Ruby
             Reset();
         }
 
-        #endregion
+        public void GiveUp()
+        {
+            Reward(RewardLevel.SmallBad);
+            Reward(RewardLevel.BigGood, Closeness());
+        }
         
+        /// <summary>
+        /// score between 1/(1-4) representing how close the craft finished to the satellite. Helps the incremental search. 
+        /// </summary>
+        /// <returns></returns>
+        float Closeness() => 1 / Mathf.Clamp(Vector3.Distance(transform.position, _satellite.transform.position), 1, 4);
+
         
-        #region Actions
+
+        #endregion ----/Scoring and Rewards ==
+
+
+
+        #region == Action ==----
+
 
         public override void Heuristic(in ActionBuffers actionsOut)
         {
@@ -317,14 +389,18 @@ namespace Ruby
             int zRotation = Input.GetKey(KeyCode.Q) ? 1 : Input.GetKey(KeyCode.E) ? -1 : 0;
 
             var discreteActionsOut = actionsOut.DiscreteActions;
-                discreteActionsOut[0] = thrust + 1;
-                discreteActionsOut[1] = xRotation + 1;
-                discreteActionsOut[2] = yRotation + 1;
-                discreteActionsOut[3] = zRotation + 1;
+            discreteActionsOut[0] = thrust + 1;
+            discreteActionsOut[1] = xRotation + 1;
+            discreteActionsOut[2] = yRotation + 1;
+            discreteActionsOut[3] = zRotation + 1;
         }
-
-
         
+        
+        /// <summary>
+        /// Universal Action receiver. Receives from model and heuristic.
+        /// Sends to specific handlers for continuous and discrete actions.
+        /// </summary>
+        /// <param name="actions"></param>
         public override void OnActionReceived(ActionBuffers actions)
         {
             base.OnActionReceived(actions);
@@ -338,12 +414,12 @@ namespace Ruby
 
 
         /// <summary>
-        /// None currently
+        /// Continuous actions. That's 
         /// </summary>
         /// <param name="actions"></param>
         void HandleActionsContinuous(ActionSegment<float> actions)
         {
-            
+            //do nothing
         }
         
         /// <summary>
@@ -366,6 +442,7 @@ namespace Ruby
             _rigidbody.AddTorque(transform.forward * RotationSpeed * (actions[3] - 1), ForceMode.Force);
             
         }
+        
         DateTime lastControl = DateTime.Now;
         private TimeSpan controlDeltaTime => DateTime.Now - lastControl;
 
@@ -391,9 +468,13 @@ namespace Ruby
             }
         }
 
-        #endregion
+        
+
+        #endregion ----/Action ==
         
         
+
+        #endregion -----------------/Agent Implementation ====
     }
 
     public enum RewardLevel
