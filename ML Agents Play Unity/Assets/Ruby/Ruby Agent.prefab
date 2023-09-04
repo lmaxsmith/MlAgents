@@ -10254,7 +10254,6 @@ GameObject:
   - component: {fileID: 8217092701872462422}
   - component: {fileID: 7441095989586052149}
   - component: {fileID: 5846396382542879006}
-  - component: {fileID: 7217873017195965813}
   - component: {fileID: 4596109728278166346}
   - component: {fileID: 6426110972894338078}
   m_Layer: 0
@@ -10312,6 +10311,8 @@ MonoBehaviour:
   _thrusterFuelSecondsReverse: 20
   _thrusterFuel: 1
   _thrusterFuelReverse: 1
+  closestSoFar: 3.4028235e+38
+  closenessIncrement: 0.1
 --- !u!114 &5846396382542879006
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -10326,7 +10327,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   m_BrainParameters:
     VectorObservationSize: 32
-    NumStackedVectorObservations: 1
+    NumStackedVectorObservations: 3
     m_ActionSpec:
       m_NumContinuousActions: 0
       BranchSizes: 03000000030000000300000003000000
@@ -10334,7 +10335,7 @@ MonoBehaviour:
     VectorActionDescriptions: []
     VectorActionSpaceType: 0
     hasUpgradedBrainParametersWithActionSpec: 1
-  m_Model: {fileID: 5022602860645237092, guid: cacfd46f50cee3a459a9ebcb34dcbe11, type: 3}
+  m_Model: {fileID: 5022602860645237092, guid: 2c0e2a371a4b38048befebfa1a678566, type: 3}
   m_InferenceDevice: 0
   m_BehaviorType: 0
   m_BehaviorName: RubyBasic
@@ -10342,22 +10343,6 @@ MonoBehaviour:
   m_UseChildSensors: 1
   m_UseChildActuators: 1
   m_ObservableAttributeHandling: 0
---- !u!114 &7217873017195965813
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 8217092701872462423}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 88b6042bc9a5d4aa58d931eae49442e5, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  agentParameters:
-    maxStep: 0
-  hasUpgradedFromAgentParameters: 1
-  MaxStep: 0
 --- !u!114 &4596109728278166346
 MonoBehaviour:
   m_ObjectHideFlags: 0
